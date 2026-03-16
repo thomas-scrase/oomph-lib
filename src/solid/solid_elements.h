@@ -82,6 +82,11 @@ namespace oomph
                                    const Vector<double>& xi,
                                    Vector<double>& b);
 
+    typedef void (*FieldsFctPt)(const unsigned& ipt,
+                                const Vector<double>& s,
+                                const Vector<double>& xi,
+                                Vector<double>& fields);
+
     /// Constructor: Set null pointers for constitutive law and for
     /// isotropic growth function. Set physical parameter values to
     /// default values, enable inertia and set body force to zero.
@@ -93,6 +98,7 @@ namespace oomph
         Lambda_sq_pt(&Default_lambda_sq_value),
         Unsteady(true),
         Body_force_fct_pt(0),
+        Fields_fct_pt(0),
         Evaluate_jacobian_by_fd(false)
     {
     }
@@ -146,6 +152,16 @@ namespace oomph
     BodyForceFctPt body_force_fct_pt() const
     {
       return Body_force_fct_pt;
+    }
+
+    FieldsFctPt& fields_fct_pt()
+    {
+      return Fields_fct_pt;
+    }
+
+    FieldsFctPt fields_fct_pt() const
+    {
+      return Fields_fct_pt;
     }
 
     /// Switch on solid inertia
@@ -309,6 +325,18 @@ namespace oomph
       }
     }
 
+    virtual void fields(const unsigned& ipt,
+                        const Vector<double>& s,
+                        const Vector<double>& xi,
+                        Vector<double>& fields) const
+    {
+      if (Fields_fct_pt == 0)
+      {
+        return;
+      }
+      (*Fields_fct_pt)(ipt, s, xi, fields);
+    }
+
 
     /// returns the number of DOF types associated with this element.
     unsigned ndof_types() const
@@ -422,6 +450,8 @@ namespace oomph
 
     /// Pointer to body force function
     BodyForceFctPt Body_force_fct_pt;
+
+    FieldsFctPt Fields_fct_pt;
 
     /// Static default value for timescale ratio (1.0 -- for natural scaling)
     static double Default_lambda_sq_value;
@@ -542,7 +572,10 @@ namespace oomph
     /// stress free and current configurations.
     inline void get_stress(const DenseMatrix<double>& g,
                            const DenseMatrix<double>& G,
-                           DenseMatrix<double>& sigma)
+                           DenseMatrix<double>& sigma,
+                           const unsigned& ipt,
+                           const Vector<double>& s,
+                           const Vector<double>& xi)
     {
 #ifdef PARANOID
       // If the pointer to the constitutive law hasn't been set, issue an error
@@ -558,8 +591,10 @@ namespace oomph
           error_message, OOMPH_CURRENT_FUNCTION, OOMPH_EXCEPTION_LOCATION);
       }
 #endif
+      Vector<double> f;
+      this->fields(ipt, s, xi, f);
       this->Constitutive_law_pt->calculate_second_piola_kirchhoff_stress(
-        g, G, sigma);
+        g, G, sigma, f);
     }
 
     /// Return the derivatives of the 2nd Piola Kirchhoff stress tensor,
@@ -569,7 +604,10 @@ namespace oomph
     inline void get_d_stress_dG_upper(const DenseMatrix<double>& g,
                                       const DenseMatrix<double>& G,
                                       const DenseMatrix<double>& sigma,
-                                      RankFourTensor<double>& d_sigma_dG)
+                                      RankFourTensor<double>& d_sigma_dG,
+                                      const unsigned& ipt,
+                                      const Vector<double>& s,
+                                      const Vector<double>& xi)
     {
 #ifdef PARANOID
       // If the pointer to the constitutive law hasn't been set, issue an error
@@ -585,9 +623,11 @@ namespace oomph
           error_message, OOMPH_CURRENT_FUNCTION, OOMPH_EXCEPTION_LOCATION);
       }
 #endif
+      Vector<double> f;
+      this->fields(ipt, s, xi, f);
       // Only bother with the symmetric part by passing false as last entry
       this->Constitutive_law_pt->calculate_d_second_piola_kirchhoff_stress_dG(
-        g, G, sigma, d_sigma_dG, false);
+        g, G, sigma, d_sigma_dG, f, false);
     }
 
 
@@ -1147,7 +1187,10 @@ namespace oomph
                            DenseMatrix<double>& sigma_dev,
                            DenseMatrix<double>& Gcontra,
                            double& gen_dil,
-                           double& inv_kappa)
+                           double& inv_kappa,
+                           const unsigned& ipt,
+                           const Vector<double>& s,
+                           const Vector<double>& xi)
     {
 #ifdef PARANOID
       // If the pointer to the constitutive law hasn't been set, issue an error
@@ -1164,8 +1207,10 @@ namespace oomph
           error_message, OOMPH_CURRENT_FUNCTION, OOMPH_EXCEPTION_LOCATION);
       }
 #endif
+      Vector<double> f;
+      this->fields(ipt, s, xi, f);
       this->Constitutive_law_pt->calculate_second_piola_kirchhoff_stress(
-        g, G, sigma_dev, Gcontra, gen_dil, inv_kappa);
+        g, G, sigma_dev, Gcontra, gen_dil, inv_kappa, f);
     }
 
 
@@ -1181,7 +1226,10 @@ namespace oomph
                                       const double& inv_kappa,
                                       const double& interpolated_solid_p,
                                       RankFourTensor<double>& d_sigma_dG,
-                                      DenseMatrix<double>& d_gen_dil_dG)
+                                      DenseMatrix<double>& d_gen_dil_dG,
+                                      const unsigned& ipt,
+                                      const Vector<double>& s,
+                                      const Vector<double>& xi)
 
     {
 #ifdef PARANOID
@@ -1199,6 +1247,8 @@ namespace oomph
           error_message, OOMPH_CURRENT_FUNCTION, OOMPH_EXCEPTION_LOCATION);
       }
 #endif
+      Vector<double> f;
+      this->fields(ipt, s, xi, f);
       // Only bother with the symmetric part by passing false as last entry
       this->Constitutive_law_pt->calculate_d_second_piola_kirchhoff_stress_dG(
         g,
@@ -1209,6 +1259,7 @@ namespace oomph
         interpolated_solid_p,
         d_sigma_dG,
         d_gen_dil_dG,
+        f,
         false);
     }
 
@@ -1259,7 +1310,10 @@ namespace oomph
                            const DenseMatrix<double>& G,
                            DenseMatrix<double>& sigma_dev,
                            DenseMatrix<double>& Gcontra,
-                           double& detG)
+                           double& detG,
+                           const unsigned& ipt,
+                           const Vector<double>& s,
+                           const Vector<double>& xi)
     {
 #ifdef PARANOID
       // If the pointer to the constitutive law hasn't been set, issue an error
@@ -1276,8 +1330,10 @@ namespace oomph
           error_message, OOMPH_CURRENT_FUNCTION, OOMPH_EXCEPTION_LOCATION);
       }
 #endif
+      Vector<double> f;
+      this->fields(ipt, s, xi, f);
       this->Constitutive_law_pt->calculate_second_piola_kirchhoff_stress(
-        g, G, sigma_dev, Gcontra, detG);
+        g, G, sigma_dev, Gcontra, detG, f);
     }
 
     ///  Return the derivative of the 2nd Piola Kirchhoff stress
@@ -1291,7 +1347,10 @@ namespace oomph
                                       const double& detG,
                                       const double& interpolated_solid_p,
                                       RankFourTensor<double>& d_sigma_dG,
-                                      DenseMatrix<double>& d_detG_dG)
+                                      DenseMatrix<double>& d_detG_dG,
+                                      const unsigned& ipt,
+                                      const Vector<double>& s,
+                                      const Vector<double>& xi)
     {
 #ifdef PARANOID
       // If the pointer to the constitutive law hasn't been set, issue an error
@@ -1308,9 +1367,19 @@ namespace oomph
           error_message, OOMPH_CURRENT_FUNCTION, OOMPH_EXCEPTION_LOCATION);
       }
 #endif
+      Vector<double> f;
+      this->fields(ipt, s, xi, f);
       // Only bother with the symmetric part by passing false as last entry
       this->Constitutive_law_pt->calculate_d_second_piola_kirchhoff_stress_dG(
-        g, G, sigma, detG, interpolated_solid_p, d_sigma_dG, d_detG_dG, false);
+        g,
+        G,
+        sigma,
+        detG,
+        interpolated_solid_p,
+        d_sigma_dG,
+        d_detG_dG,
+        f,
+        false);
     }
   };
 

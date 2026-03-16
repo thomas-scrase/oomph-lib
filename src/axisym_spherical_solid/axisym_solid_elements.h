@@ -81,7 +81,8 @@ namespace oomph
           error_message, OOMPH_CURRENT_FUNCTION, OOMPH_EXCEPTION_LOCATION);
       }
 #endif
-      Constitutive_law_pt->calculate_second_piola_kirchhoff_stress(g, G, sigma);
+      Constitutive_law_pt->calculate_second_piola_kirchhoff_stress(
+        g, G, sigma, Vector<double>());
     }
 
     /// Fill in the residuals by calling the generic function
@@ -714,7 +715,7 @@ namespace oomph
       }
 #endif
       Constitutive_law_pt->calculate_second_piola_kirchhoff_stress(
-        g, G, sigma, Gup, pressure_stress, kappa);
+        g, G, sigma, Gup, pressure_stress, kappa, Vector<double>());
     }
 
     /// Return the stress tensor, as calculated from the constitutive law
@@ -740,7 +741,7 @@ namespace oomph
       }
 #endif
       Constitutive_law_pt->calculate_second_piola_kirchhoff_stress(
-        g, G, sigma, Gup, detG);
+        g, G, sigma, Gup, detG, Vector<double>());
     }
 
     /// Return whether the material is incompressible

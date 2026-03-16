@@ -354,6 +354,7 @@ namespace oomph
     const DenseMatrix<double>& G,
     const DenseMatrix<double>& sigma,
     RankFourTensor<double>& d_sigma_dG,
+    const Vector<double>& fields,
     const bool& symmetrize_tensor)
   {
     // Initial error checking
@@ -401,7 +402,8 @@ namespace oomph
         G_pls(j, i) = G_pls(i, j);
 
         // Get advanced stress
-        this->calculate_second_piola_kirchhoff_stress(g, G_pls, sigma_pls);
+        this->calculate_second_piola_kirchhoff_stress(
+          g, G_pls, sigma_pls, fields);
 
         for (unsigned ii = 0; ii < dim; ii++)
         {
@@ -458,6 +460,7 @@ namespace oomph
     const double& interpolated_solid_p,
     RankFourTensor<double>& d_sigma_dG,
     DenseMatrix<double>& d_detG_dG,
+    const Vector<double>& fields,
     const bool& symmetrize_tensor)
   {
     // Initial error checking
@@ -507,7 +510,7 @@ namespace oomph
 
         // Get advanced stress
         this->calculate_second_piola_kirchhoff_stress(
-          g, G_pls, sigma_dev_pls, Gup_pls, detG_pls);
+          g, G_pls, sigma_dev_pls, Gup_pls, detG_pls, fields);
 
 
         // Derivative of determinant of deformed metric tensor
@@ -572,6 +575,7 @@ namespace oomph
     const double& interpolated_solid_p,
     RankFourTensor<double>& d_sigma_dG,
     DenseMatrix<double>& d_gen_dil_dG,
+    const Vector<double>& fields,
     const bool& symmetrize_tensor)
   {
     // Initial error checking
@@ -622,7 +626,7 @@ namespace oomph
 
         // Get advanced stress
         this->calculate_second_piola_kirchhoff_stress(
-          g, G_pls, sigma_dev_pls, Gup_pls, gen_dil_pls, inv_kappa_pls);
+          g, G_pls, sigma_dev_pls, Gup_pls, gen_dil_pls, inv_kappa_pls, fields);
 
         // Derivative of generalised dilatation
         d_gen_dil_dG(i, j) = (gen_dil_pls - gen_dil) / eps_fd;
@@ -682,7 +686,8 @@ namespace oomph
   void GeneralisedHookean::calculate_second_piola_kirchhoff_stress(
     const DenseMatrix<double>& g,
     const DenseMatrix<double>& G,
-    DenseMatrix<double>& sigma)
+    DenseMatrix<double>& sigma,
+    const Vector<double>& fields)
   {
     // Error checking
 #ifdef PARANOID
@@ -768,7 +773,8 @@ namespace oomph
     DenseMatrix<double>& sigma_dev,
     DenseMatrix<double>& Gup,
     double& gen_dil,
-    double& inv_kappa)
+    double& inv_kappa,
+    const Vector<double>& fields)
   {
     // Find the dimension of the problem
     unsigned dim = G.nrow();
@@ -778,7 +784,7 @@ namespace oomph
 
     // Compute deviatoric stress by calling the incompressible
     // version of this function
-    calculate_second_piola_kirchhoff_stress(g, G, sigma_dev, Gup, detG);
+    calculate_second_piola_kirchhoff_stress(g, G, sigma_dev, Gup, detG, fields);
 
     // Calculate the inverse of the "bulk" modulus
     inv_kappa =
@@ -813,7 +819,8 @@ namespace oomph
     const DenseMatrix<double>& G,
     DenseMatrix<double>& sigma_dev,
     DenseMatrix<double>& Gup,
-    double& detG)
+    double& detG,
+    const Vector<double>& fields)
   {
     // Error checking
 #ifdef PARANOID
@@ -895,7 +902,8 @@ namespace oomph
   void IsotropicStrainEnergyFunctionConstitutiveLaw::
     calculate_second_piola_kirchhoff_stress(const DenseMatrix<double>& g,
                                             const DenseMatrix<double>& G,
-                                            DenseMatrix<double>& sigma)
+                                            DenseMatrix<double>& sigma,
+                                            const Vector<double>& fields)
   {
 // Error checking
 #ifdef PARANOID
@@ -925,74 +933,24 @@ namespace oomph
     double detG = calculate_contravariant(G, Gup);
 
     // Calculate the strain invariants
-    Vector<double> I(3, 0.0);
-    // The third strain invaraint is the volumetric change
-    I[2] = detG / detg;
-    // The first and second are a bit more complex --- see G&Z
-    for (unsigned i = 0; i < dim; i++)
-    {
-      for (unsigned j = 0; j < dim; j++)
-      {
-        I[0] += gup(i, j) * G(i, j);
-        I[1] += g(i, j) * Gup(i, j);
-      }
-    }
-
-    // If 2D we assume plane strain: In this case the 3D tensors have
-    // a 1 on the diagonal and zeroes in the off-diagonals of their
-    // third rows and columns. Only effect: Increase the first two
-    // invariants by one; rest of the computation can just be performed
-    // over the 2d set of coordinates.
-    if (dim == 2)
-    {
-      I[0] += 1.0;
-      I[1] += 1.0;
-    }
-
-    // Second strain invariant is multiplied by the third.
-    I[1] *= I[2];
+    Vector<double> I;
+    Vector<DenseMatrix<double>> dIdG;
+    Strain_energy_function_pt->get_I_compressible(g, G, gup, Gup, detg, detG, fields, I, dIdG);
 
     // Calculate the derivatives of the strain energy function wrt the
     // strain invariants
-    Vector<double> dWdI(3, 0.0);
+    Vector<double> dWdI;
     Strain_energy_function_pt->derivatives(I, dWdI);
 
-
-    // Only bother to compute the tensor B^{ij} (Green & Zerna notation)
-    // if the derivative wrt the second strain invariant is non-zero
-    DenseMatrix<double> Bup(dim, dim, 0.0);
-    if (std::fabs(dWdI[1]) > 0.0)
+    // Put it all together to get the stress
+    for (unsigned k = 0; k < I.size(); k++)
     {
       for (unsigned i = 0; i < dim; i++)
       {
         for (unsigned j = 0; j < dim; j++)
         {
-          Bup(i, j) = I[0] * gup(i, j);
-          for (unsigned r = 0; r < dim; r++)
-          {
-            for (unsigned s = 0; s < dim; s++)
-            {
-              Bup(i, j) -= gup(i, r) * gup(j, s) * G(r, s);
-            }
-          }
+          sigma(i, j) = 2.0 * dIdG[k](i,j) * dWdI[k];
         }
-      }
-    }
-
-    // Now set the values of the functions phi, psi and p (Green & Zerna
-    // notation) Note that the Green & Zerna stress \tau^{ij} is
-    // s^{ij}/sqrt(I[2]), where s^{ij} is the desired second Piola-Kirchhoff
-    // stress tensor so we multiply their constants by sqrt(I[2])
-    double phi = 2.0 * dWdI[0];
-    double psi = 2.0 * dWdI[1];
-    double p = 2.0 * dWdI[2] * I[2];
-
-    // Put it all together to get the stress
-    for (unsigned i = 0; i < dim; i++)
-    {
-      for (unsigned j = 0; j < dim; j++)
-      {
-        sigma(i, j) = phi * gup(i, j) + psi * Bup(i, j) + p * Gup(i, j);
       }
     }
   }
@@ -1011,7 +969,8 @@ namespace oomph
                                             const DenseMatrix<double>& G,
                                             DenseMatrix<double>& sigma_dev,
                                             DenseMatrix<double>& Gup,
-                                            double& detG)
+                                            double& detG,
+                                            const Vector<double>& fields)
   {
 // Error checking
 #ifdef PARANOID
@@ -1043,85 +1002,41 @@ namespace oomph
     detG = calculate_contravariant(G, Gup);
 
     // Calculate the strain invariants
-    Vector<double> I(3, 0.0);
-    // The third strain invaraint must be one (incompressibility)
-    I[2] = 1.0;
-    // The first and second are a bit more complex
-    for (unsigned i = 0; i < dim; i++)
-    {
-      for (unsigned j = 0; j < dim; j++)
-      {
-        I[0] += gup(i, j) * G(i, j);
-        I[1] += g(i, j) * Gup(i, j);
-      }
-    }
-
-    // If 2D we assume plane strain: In this case the 3D tensors have
-    // a 1 on the diagonal and zeroes in the off-diagonals of their
-    // third rows and columns. Only effect: Increase the first two
-    // invariants by one; rest of the computation can just be performed
-    // over the 2d set of coordinates.
-    if (dim == 2)
-    {
-      I[0] += 1.0;
-      I[1] += 1.0;
-    }
+    Vector<double> I;
+    Vector<DenseMatrix<double>> dIdG;
+    Strain_energy_function_pt->get_I_incompressible(g, G, gup, Gup, 1.0, detG, fields, I, dIdG);
 
     // Calculate the derivatives of the strain energy function wrt the
     // strain invariants
     Vector<double> dWdI(3, 0.0);
     Strain_energy_function_pt->derivatives(I, dWdI);
 
-    // Only bother to compute the tensor B^{ij} (Green & Zerna notation)
-    // if the derivative wrt the second strain invariant is non-zero
-    DenseMatrix<double> Bup(dim, dim, 0.0);
-    if (std::fabs(dWdI[1]) > 0.0)
+    // Put it all together to get the stress
+    for (unsigned k = 0; k < I.size(); k++)
     {
       for (unsigned i = 0; i < dim; i++)
       {
         for (unsigned j = 0; j < dim; j++)
         {
-          Bup(i, j) = I[0] * gup(i, j);
-          for (unsigned r = 0; r < dim; r++)
-          {
-            for (unsigned s = 0; s < dim; s++)
-            {
-              Bup(i, j) -= gup(i, r) * gup(j, s) * G(r, s);
-            }
-          }
+          sigma_dev(i, j) += 2.0 * dIdG[k](i,j) * dWdI[k];
         }
       }
     }
 
-    // Now set the values of the functions phi and psi (Green & Zerna notation)
-    double phi = 2.0 * dWdI[0];
-    double psi = 2.0 * dWdI[1];
-    // Calculate the trace/dim of the first two terms of the stress tensor
-    // phi g^{ij} + psi B^{ij} (see Green & Zerna)
-    double K;
-    // In two-d, we cannot use the strain invariants directly
-    // but can use symmetry of the tensors involved
-    if (dim == 2)
+    double k = 0.0;
+    for (unsigned i = 0; i < dim; i++)
     {
-      K = 0.5 * ((I[0] - 1.0) * phi +
-                 psi * (Bup(0, 0) * G(0, 0) + Bup(1, 1) * G(1, 1) +
-                        2.0 * Bup(0, 1) * G(0, 1)));
+      k += sigma_dev(i, i);
     }
-    // In three-d we can make use of the strain invariants, see Green & Zerna
-    else
-    {
-      K = (I[0] * phi + 2.0 * I[1] * psi) / 3.0;
-    }
+    k /= 3.0;
 
-    // Put it all together to get the stress, subtracting the trace of the
-    // first two terms to ensure that the stress is deviatoric, which means
-    // that the computed pressure is the mechanical pressure
     for (unsigned i = 0; i < dim; i++)
     {
       for (unsigned j = 0; j < dim; j++)
       {
-        sigma_dev(i, j) = phi * gup(i, j) + psi * Bup(i, j) - K * Gup(i, j);
+        sigma_dev(i, j) -= k * Gup(i,j);
       }
+      
     }
   }
 
@@ -1139,7 +1054,8 @@ namespace oomph
                                             DenseMatrix<double>& sigma_dev,
                                             DenseMatrix<double>& Gup,
                                             double& gen_dil,
-                                            double& inv_kappa)
+                                            double& inv_kappa,
+                                            const Vector<double>& fields)
   {
 // Error checking
 #ifdef PARANOID
@@ -1168,81 +1084,35 @@ namespace oomph
     double detg = calculate_contravariant(g, gup);
     double detG = calculate_contravariant(G, Gup);
 
+    
     // Calculate the strain invariants
-    Vector<double> I(3, 0.0);
-    // The third strain invaraint is the volumetric change
-    I[2] = detG / detg;
-    // The first and second are a bit more complex --- see G&Z
-    for (unsigned i = 0; i < dim; i++)
-    {
-      for (unsigned j = 0; j < dim; j++)
-      {
-        I[0] += gup(i, j) * G(i, j);
-        I[1] += g(i, j) * Gup(i, j);
-      }
-    }
-
-    // If 2D we assume plane strain: In this case the 3D tensors have
-    // a 1 on the diagonal and zeroes in the off-diagonals of their
-    // third rows and columns. Only effect: Increase the first two
-    // invariants by one; rest of the computation can just be performed
-    // over the 2d set of coordinates.
-    if (dim == 2)
-    {
-      I[0] += 1.0;
-      I[1] += 1.0;
-    }
-
-    // Second strain invariant is multiplied by the third.
-    I[1] *= I[2];
+    Vector<double> I;
+    Vector<DenseMatrix<double>> dIdG;
+    Strain_energy_function_pt->get_I_nearly_incompressible(g, G, gup, Gup, 1.0, detG, fields, I, dIdG);
 
     // Calculate the derivatives of the strain energy function wrt the
     // strain invariants
     Vector<double> dWdI(3, 0.0);
     Strain_energy_function_pt->derivatives(I, dWdI);
 
-    // Only bother to calculate the tensor B^{ij} (Green & Zerna notation)
-    // if the derivative wrt the second strain invariant is non-zero
-    DenseMatrix<double> Bup(dim, dim, 0.0);
-    if (std::fabs(dWdI[1]) > 0.0)
+    // Put it all together to get the stress
+    for (unsigned k = 0; k < I.size(); k++)
     {
       for (unsigned i = 0; i < dim; i++)
       {
         for (unsigned j = 0; j < dim; j++)
         {
-          Bup(i, j) = I[0] * gup(i, j);
-          for (unsigned r = 0; r < dim; r++)
-          {
-            for (unsigned s = 0; s < dim; s++)
-            {
-              Bup(i, j) -= gup(i, r) * gup(j, s) * G(r, s);
-            }
-          }
+          sigma_dev(i, j) += 2.0 * dIdG[k](i,j) * dWdI[k];
         }
       }
     }
-
-    // Now set the values of the functions phi and psi (Green & Zerna notation)
-    // but multiplied by sqrt(I[2]) to recover the second Piola-Kirchhoff stress
-    double phi = 2.0 * dWdI[0];
-    double psi = 2.0 * dWdI[1];
-
-    // Calculate the trace/dim of the first two terms of the stress tensor
-    // phi g^{ij} + psi B^{ij} (see Green & Zerna)
-    double K;
-    // In two-d, we cannot use the strain invariants directly,
-    // but we can use symmetry of the tensors involved
-    if (dim == 2)
+    
+    double k = 0.0;
+    for (unsigned i = 0; i < dim; i++)
     {
-      K = 0.5 * ((I[0] - 1.0) * phi +
-                 psi * (Bup(0, 0) * G(0, 0) + Bup(1, 1) * G(1, 1) +
-                        2.0 * Bup(0, 1) * G(0, 1)));
+      k += sigma_dev(i, i);
     }
-    // In three-d we can make use of the strain invariants
-    else
-    {
-      K = (I[0] * phi + 2.0 * I[1] * psi) / 3.0;
-    }
+    k /= 3.0;
 
     // Choose inverse kappa to be one...
     inv_kappa = 1.0;
@@ -1251,7 +1121,7 @@ namespace oomph
     // notation, but multiplied by sqrt(I[2]) with the addition of the
     // terms that are subtracted to make the other part of the stress
     // deviatoric
-    gen_dil = 2.0 * dWdI[2] * I[2] + K;
+    gen_dil = 2.0 * dWdI[2] * I[2] + k;
 
     // Calculate the deviatoric part of the stress by subtracting
     // the computed trace/dim
@@ -1259,7 +1129,7 @@ namespace oomph
     {
       for (unsigned j = 0; j < dim; j++)
       {
-        sigma_dev(i, j) = phi * gup(i, j) + psi * Bup(i, j) - K * Gup(i, j);
+        sigma_dev(i, j) -= k * Gup(i, j);
       }
     }
   }

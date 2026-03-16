@@ -353,7 +353,7 @@ namespace oomph
 
       // Now calculate the stress tensor from the constitutive law
       DenseMatrix<double> sigma(DIM);
-      get_stress(g, G, sigma);
+      get_stress(g, G, sigma, ipt, s, interpolated_xi);
 
       // Add pre-stress
       for (unsigned i = 0; i < DIM; i++)
@@ -402,7 +402,8 @@ namespace oomph
 
         // Get the "upper triangular" entries of the derivatives of the stress
         // tensor with respect to G
-        this->get_d_stress_dG_upper(g, G, sigma, d_stress_dG);
+        this->get_d_stress_dG_upper(
+          g, G, sigma, d_stress_dG, ipt, s, interpolated_xi);
       }
 
       //=====EQUATIONS OF ELASTICITY FROM PRINCIPLE OF VIRTUAL
@@ -1053,7 +1054,7 @@ namespace oomph
     }
 
     // Now calculate the stress tensor from the constitutive law
-    get_stress(g, G, sigma);
+    get_stress(g, G, sigma, ipt, s, Vector<double>(DIM, 0.0));
   }
 
 
@@ -1516,7 +1517,7 @@ namespace oomph
       // of the deformed covariant metric tensor.
       if (Incompressible)
       {
-        get_stress(g, G, sigma_dev, Gup, detG);
+        get_stress(g, G, sigma_dev, Gup, detG, ipt, s, interpolated_xi);
 
         // Get full stress
         for (unsigned a = 0; a < DIM; a++)
@@ -1532,8 +1533,16 @@ namespace oomph
         {
           // Get the "upper triangular" entries of the derivatives of the stress
           // tensor with respect to G
-          this->get_d_stress_dG_upper(
-            g, G, sigma, detG, interpolated_solid_p, d_stress_dG, d_detG_dG);
+          this->get_d_stress_dG_upper(g,
+                                      G,
+                                      sigma,
+                                      detG,
+                                      interpolated_solid_p,
+                                      d_stress_dG,
+                                      d_detG_dG,
+                                      ipt,
+                                      s,
+                                      interpolated_xi);
         }
       }
       // Nearly incompressible: Compute the deviatoric part of the
@@ -1541,7 +1550,8 @@ namespace oomph
       // the generalised dilatation and the inverse bulk modulus.
       else
       {
-        get_stress(g, G, sigma_dev, Gup, gen_dil, inv_kappa);
+        get_stress(
+          g, G, sigma_dev, Gup, gen_dil, inv_kappa, ipt, s, interpolated_xi);
 
         // Get full stress
         for (unsigned a = 0; a < DIM; a++)
@@ -1564,7 +1574,10 @@ namespace oomph
                                       inv_kappa,
                                       interpolated_solid_p,
                                       d_stress_dG,
-                                      d_gen_dil_dG);
+                                      d_gen_dil_dG,
+                                      ipt,
+                                      s,
+                                      interpolated_xi);
         }
       }
 
@@ -2399,14 +2412,22 @@ namespace oomph
 
     if (Incompressible)
     {
-      get_stress(g, G, sigma_dev, Gup, detG);
+      get_stress(g, G, sigma_dev, Gup, detG, ipt, s, Vector<double>(DIM, 0.0));
     }
     // Nearly incompressible: Compute the deviatoric part of the
     // stress tensor, the contravariant deformed metric tensor,
     // the generalised dilatation and the inverse bulk modulus.
     else
     {
-      get_stress(g, G, sigma_dev, Gup, gen_dil, inv_kappa);
+      get_stress(g,
+                 G,
+                 sigma_dev,
+                 Gup,
+                 gen_dil,
+                 inv_kappa,
+                 ipt,
+                 s,
+                 Vector<double>(DIM, 0.0));
     }
 
     // Get complete stress

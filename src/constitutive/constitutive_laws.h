@@ -53,6 +53,179 @@ namespace oomph
     /// Empty virtual destructor
     virtual ~StrainEnergyFunction() {}
 
+    virtual void get_I_compressible(const DenseMatrix<double>& g,
+                                    const DenseMatrix<double>& G,
+                                    const DenseMatrix<double>& gup,
+                                    const DenseMatrix<double>& Gup,
+                                    const double& detg,
+                                    const double& detG,
+                                    const Vector<double>& fields,
+                                    Vector<double>& I,
+                                    Vector<DenseMatrix<double>>& dIdG) const
+    {
+      I.resize(3, 0.0);
+      // Find the dimension of the problem
+      unsigned dim = g.nrow();
+
+      // The third strain invaraint is the volumetric change
+      I[2] = detG / detg;
+      // The first and second are a bit more complex --- see G&Z
+      for (unsigned i = 0; i < dim; i++)
+      {
+        for (unsigned j = 0; j < dim; j++)
+        {
+          I[0] += gup(i, j) * G(i, j);
+          I[1] += g(i, j) * Gup(i, j);
+        }
+      }
+
+      // If 2D we assume plane strain: In this case the 3D tensors have
+      // a 1 on the diagonal and zeroes in the off-diagonals of their
+      // third rows and columns. Only effect: Increase the first two
+      // invariants by one; rest of the computation can just be performed
+      // over the 2d set of coordinates.
+      if (dim == 2)
+      {
+        I[0] += 1.0;
+        I[1] += 1.0;
+      }
+
+      // Second strain invariant is multiplied by the third.
+      I[1] *= I[2];
+
+      dIdG.resize(3, DenseMatrix<double>(dim));
+      dIdG[0] = gup;
+      for (unsigned i = 0; i < dim; i++)
+      {
+        for (unsigned j = 0; j < dim; j++)
+        {
+          dIdG[2](i, j) = Gup(i, j) * I[2];
+          dIdG[1](i, j) = I[0] * gup(i, j);
+          for (unsigned r = 0; r < dim; r++)
+          {
+            for (unsigned s = 0; s < dim; s++)
+            {
+              dIdG[1](i, j) -= gup(i, r) * gup(j, s) * G(r, s);
+            }
+          }
+        }
+      }
+    }
+
+    virtual void get_I_incompressible(const DenseMatrix<double>& g,
+                                      const DenseMatrix<double>& G,
+                                      const DenseMatrix<double>& gup,
+                                      const DenseMatrix<double>& Gup,
+                                      const double& detg,
+                                      const double& detG,
+                                      const Vector<double>& fields,
+                                      Vector<double>& I,
+                                      Vector<DenseMatrix<double>>& dIdG) const
+    {
+      I.resize(3, 0.0);
+      // Find the dimension of the problem
+      unsigned dim = g.nrow();
+
+      // The third strain invaraint is the volumetric change
+      I[2] = 1.0;
+      // The first and second are a bit more complex --- see G&Z
+      for (unsigned i = 0; i < dim; i++)
+      {
+        for (unsigned j = 0; j < dim; j++)
+        {
+          I[0] += gup(i, j) * G(i, j);
+          I[1] += g(i, j) * Gup(i, j);
+        }
+      }
+
+      // If 2D we assume plane strain: In this case the 3D tensors have
+      // a 1 on the diagonal and zeroes in the off-diagonals of their
+      // third rows and columns. Only effect: Increase the first two
+      // invariants by one; rest of the computation can just be performed
+      // over the 2d set of coordinates.
+      if (dim == 2)
+      {
+        I[0] += 1.0;
+        I[1] += 1.0;
+      }
+
+      dIdG.resize(3, DenseMatrix<double>(dim));
+      dIdG[0] = gup;
+      for (unsigned i = 0; i < dim; i++)
+      {
+        for (unsigned j = 0; j < dim; j++)
+        {
+          dIdG[2](i, j) = 0.0;
+          dIdG[1](i, j) = I[0] * gup(i, j);
+          for (unsigned r = 0; r < dim; r++)
+          {
+            for (unsigned s = 0; s < dim; s++)
+            {
+              dIdG[1](i, j) -= gup(i, r) * gup(j, s) * G(r, s);
+            }
+          }
+        }
+      }
+    }
+
+    virtual void get_I_nearly_incompressible(const DenseMatrix<double>& g,
+                                             const DenseMatrix<double>& G,
+                                             const DenseMatrix<double>& gup,
+                                             const DenseMatrix<double>& Gup,
+                                             const double& detg,
+                                             const double& detG,
+                                             const Vector<double>& fields,
+                                             Vector<double>& I,
+                                             Vector<DenseMatrix<double>>& dIdG) const
+    {
+      I.resize(3, 0.0);
+      // Find the dimension of the problem
+      unsigned dim = g.nrow();
+
+      // The third strain invaraint is the volumetric change
+      I[2] = detG / detg;
+      // The first and second are a bit more complex --- see G&Z
+      for (unsigned i = 0; i < dim; i++)
+      {
+        for (unsigned j = 0; j < dim; j++)
+        {
+          I[0] += gup(i, j) * G(i, j);
+          I[1] += g(i, j) * Gup(i, j);
+        }
+      }
+
+      // If 2D we assume plane strain: In this case the 3D tensors have
+      // a 1 on the diagonal and zeroes in the off-diagonals of their
+      // third rows and columns. Only effect: Increase the first two
+      // invariants by one; rest of the computation can just be performed
+      // over the 2d set of coordinates.
+      if (dim == 2)
+      {
+        I[0] += 1.0;
+        I[1] += 1.0;
+      }
+
+      // Second strain invariant is multiplied by the third.
+      I[1] *= I[2];
+
+      dIdG.resize(3, DenseMatrix<double>(dim));
+      dIdG[0] = gup;
+      for (unsigned i = 0; i < dim; i++)
+      {
+        for (unsigned j = 0; j < dim; j++)
+        {
+          dIdG[2](i, j) = 0.0;
+          dIdG[1](i, j) = I[0] * gup(i, j);
+          for (unsigned r = 0; r < dim; r++)
+          {
+            for (unsigned s = 0; s < dim; s++)
+            {
+              dIdG[1](i, j) -= gup(i, r) * gup(j, s) * G(r, s);
+            }
+          }
+        }
+      }
+    }
 
     /// Return the strain energy in terms of the strain tensor
     virtual double W(const DenseMatrix<double>& gamma)
@@ -105,9 +278,10 @@ namespace oomph
       // invariants
       double FD_Jstep = 1.0e-8; // Usual comments about global stuff
       double energy = W(I);
+      const unsigned& nI = I.size();
 
       // Loop over the strain invariants
-      for (unsigned i = 0; i < 3; i++)
+      for (unsigned i = 0; i < nI; i++)
       {
         // Store old value
         double I_prev = I[i];
@@ -512,7 +686,8 @@ namespace oomph
     virtual void calculate_second_piola_kirchhoff_stress(
       const DenseMatrix<double>& g,
       const DenseMatrix<double>& G,
-      DenseMatrix<double>& sigma) = 0;
+      DenseMatrix<double>& sigma,
+      const Vector<double>& fields) = 0;
 
     /// Calculate the derivatives of the contravariant
     /// 2nd Piola Kirchhoff stress tensor with respect to the deformed metric
@@ -531,6 +706,7 @@ namespace oomph
       const DenseMatrix<double>& G,
       const DenseMatrix<double>& sigma,
       RankFourTensor<double>& d_sigma_dG,
+      const Vector<double>& fields,
       const bool& symmetrize_tensor = true);
 
 
@@ -549,7 +725,8 @@ namespace oomph
       const DenseMatrix<double>& G,
       DenseMatrix<double>& sigma_dev,
       DenseMatrix<double>& G_contra,
-      double& Gdet)
+      double& Gdet,
+      const Vector<double>& fields)
     {
       throw OomphLibError(
         "Incompressible formulation not implemented for this constitutive law",
@@ -578,6 +755,7 @@ namespace oomph
       const double& interpolated_solid_p,
       RankFourTensor<double>& d_sigma_dG,
       DenseMatrix<double>& d_detG_dG,
+      const Vector<double>& fields,
       const bool& symmetrize_tensor = true);
 
 
@@ -595,7 +773,8 @@ namespace oomph
       DenseMatrix<double>& sigma_dev,
       DenseMatrix<double>& Gcontra,
       double& gen_dil,
-      double& inv_kappa)
+      double& inv_kappa,
+      const Vector<double>& fields)
     {
       throw OomphLibError(
         "Near-incompressible formulation not implemented for constitutive law",
@@ -622,6 +801,7 @@ namespace oomph
       const double& interpolated_solid_p,
       RankFourTensor<double>& d_sigma_dG,
       DenseMatrix<double>& d_gen_dil_dG,
+      const Vector<double>& fields,
       const bool& symmetrize_tensor = true);
 
 
@@ -730,7 +910,8 @@ namespace oomph
     /// matrix in which to return the stress tensor
     void calculate_second_piola_kirchhoff_stress(const DenseMatrix<double>& g,
                                                  const DenseMatrix<double>& G,
-                                                 DenseMatrix<double>& sigma);
+                                                 DenseMatrix<double>& sigma,
+                                                 const Vector<double>& fields);
 
 
     /// Calculate the deviatoric part
@@ -747,7 +928,8 @@ namespace oomph
                                                  const DenseMatrix<double>& G,
                                                  DenseMatrix<double>& sigma_dev,
                                                  DenseMatrix<double>& G_contra,
-                                                 double& Gdet);
+                                                 double& Gdet,
+                                                 const Vector<double>& fields);
 
 
     /// Calculate the deviatoric part of the contravariant
@@ -763,7 +945,8 @@ namespace oomph
                                                  DenseMatrix<double>& sigma_dev,
                                                  DenseMatrix<double>& Gcontra,
                                                  double& gen_dil,
-                                                 double& inv_kappa);
+                                                 double& inv_kappa,
+                                                 const Vector<double>& fields);
 
 
     /// Pure virtual function in which the writer must declare if the
@@ -818,7 +1001,8 @@ namespace oomph
     /// Uses correct 3D invariants for 2D (plane strain) problems.
     void calculate_second_piola_kirchhoff_stress(const DenseMatrix<double>& g,
                                                  const DenseMatrix<double>& G,
-                                                 DenseMatrix<double>& sigma);
+                                                 DenseMatrix<double>& sigma,
+                                                 const Vector<double>& fields);
 
 
     /// Calculate the deviatoric part
@@ -835,7 +1019,8 @@ namespace oomph
                                                  const DenseMatrix<double>& G,
                                                  DenseMatrix<double>& sigma_dev,
                                                  DenseMatrix<double>& G_contra,
-                                                 double& Gdet);
+                                                 double& Gdet,
+                                                 const Vector<double>& fields);
 
 
     /// Calculate the deviatoric part of the contravariant
@@ -851,7 +1036,8 @@ namespace oomph
                                                  DenseMatrix<double>& sigma_dev,
                                                  DenseMatrix<double>& Gcontra,
                                                  double& gen_dil,
-                                                 double& inv_kappa);
+                                                 double& inv_kappa,
+                                                 const Vector<double>& fields);
 
 
     /// State if the constitutive equation requires an incompressible
