@@ -935,11 +935,12 @@ namespace oomph
     // Calculate the strain invariants
     Vector<double> I;
     Vector<DenseMatrix<double>> dIdG;
-    Strain_energy_function_pt->get_I_compressible(g, G, gup, Gup, detg, detG, fields, I, dIdG);
+    Strain_energy_function_pt->get_I_compressible(
+      g, G, gup, Gup, detg, detG, fields, I, dIdG);
 
     // Calculate the derivatives of the strain energy function wrt the
     // strain invariants
-    Vector<double> dWdI;
+    Vector<double> dWdI(I.size(), 0.0);
     Strain_energy_function_pt->derivatives(I, dWdI);
 
     // Put it all together to get the stress
@@ -949,7 +950,7 @@ namespace oomph
       {
         for (unsigned j = 0; j < dim; j++)
         {
-          sigma(i, j) = 2.0 * dIdG[k](i,j) * dWdI[k];
+          sigma(i, j) = 2.0 * dIdG[k](i, j) * dWdI[k];
         }
       }
     }
@@ -1004,11 +1005,12 @@ namespace oomph
     // Calculate the strain invariants
     Vector<double> I;
     Vector<DenseMatrix<double>> dIdG;
-    Strain_energy_function_pt->get_I_incompressible(g, G, gup, Gup, 1.0, detG, fields, I, dIdG);
+    Strain_energy_function_pt->get_I_incompressible(
+      g, G, gup, Gup, 1.0, detG, fields, I, dIdG);
 
     // Calculate the derivatives of the strain energy function wrt the
     // strain invariants
-    Vector<double> dWdI(3, 0.0);
+    Vector<double> dWdI(I.size(), 0.0);
     Strain_energy_function_pt->derivatives(I, dWdI);
 
     // Put it all together to get the stress
@@ -1018,7 +1020,7 @@ namespace oomph
       {
         for (unsigned j = 0; j < dim; j++)
         {
-          sigma_dev(i, j) += 2.0 * dIdG[k](i,j) * dWdI[k];
+          sigma_dev(i, j) += 2.0 * dIdG[k](i, j) * dWdI[k];
         }
       }
     }
@@ -1034,9 +1036,8 @@ namespace oomph
     {
       for (unsigned j = 0; j < dim; j++)
       {
-        sigma_dev(i, j) -= k * Gup(i,j);
+        sigma_dev(i, j) -= k * Gup(i, j);
       }
-      
     }
   }
 
@@ -1084,15 +1085,16 @@ namespace oomph
     double detg = calculate_contravariant(g, gup);
     double detG = calculate_contravariant(G, Gup);
 
-    
+
     // Calculate the strain invariants
     Vector<double> I;
     Vector<DenseMatrix<double>> dIdG;
-    Strain_energy_function_pt->get_I_nearly_incompressible(g, G, gup, Gup, 1.0, detG, fields, I, dIdG);
+    Strain_energy_function_pt->get_I_nearly_incompressible(
+      g, G, gup, Gup, 1.0, detG, fields, I, dIdG);
 
     // Calculate the derivatives of the strain energy function wrt the
     // strain invariants
-    Vector<double> dWdI(3, 0.0);
+    Vector<double> dWdI(I.size(), 0.0);
     Strain_energy_function_pt->derivatives(I, dWdI);
 
     // Put it all together to get the stress
@@ -1102,11 +1104,11 @@ namespace oomph
       {
         for (unsigned j = 0; j < dim; j++)
         {
-          sigma_dev(i, j) += 2.0 * dIdG[k](i,j) * dWdI[k];
+          sigma_dev(i, j) += 2.0 * dIdG[k](i, j) * dWdI[k];
         }
       }
     }
-    
+
     double k = 0.0;
     for (unsigned i = 0; i < dim; i++)
     {
