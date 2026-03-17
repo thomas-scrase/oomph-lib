@@ -944,13 +944,14 @@ namespace oomph
     Strain_energy_function_pt->derivatives(I, dWdI);
 
     // Put it all together to get the stress
-    for (unsigned k = 0; k < I.size(); k++)
+    for (unsigned i = 0; i < dim; i++)
     {
-      for (unsigned i = 0; i < dim; i++)
+      for (unsigned j = 0; j < dim; j++)
       {
-        for (unsigned j = 0; j < dim; j++)
+        sigma(i, j) = 0.0;
+        for (unsigned k = 0; k < I.size(); k++)
         {
-          sigma(i, j) = 2.0 * dIdG[k](i, j) * dWdI[k];
+          sigma(i, j) += 2.0 * dWdI[k] * dIdG[k](i, j);
         }
       }
     }
@@ -1014,13 +1015,14 @@ namespace oomph
     Strain_energy_function_pt->derivatives(I, dWdI);
 
     // Put it all together to get the stress
-    for (unsigned k = 0; k < I.size(); k++)
+    for (unsigned i = 0; i < dim; i++)
     {
-      for (unsigned i = 0; i < dim; i++)
+      for (unsigned j = 0; j < dim; j++)
       {
-        for (unsigned j = 0; j < dim; j++)
+        sigma_dev(i, j) = 0.0;
+        for (unsigned k = 0; k < I.size(); k++)
         {
-          sigma_dev(i, j) += 2.0 * dIdG[k](i, j) * dWdI[k];
+          sigma_dev(i, j) += 2.0 * dWdI[k] * dIdG[k](i, j);
         }
       }
     }
@@ -1098,13 +1100,14 @@ namespace oomph
     Strain_energy_function_pt->derivatives(I, dWdI);
 
     // Put it all together to get the stress
-    for (unsigned k = 0; k < I.size(); k++)
+
+    for (unsigned i = 0; i < dim; i++)
     {
-      for (unsigned i = 0; i < dim; i++)
+      for (unsigned j = 0; j < dim; j++)
       {
-        for (unsigned j = 0; j < dim; j++)
+        for (unsigned k = 0; k < I.size(); k++)
         {
-          sigma_dev(i, j) += 2.0 * dIdG[k](i, j) * dWdI[k];
+          sigma_dev(i, j) += 2.0 * dWdI[k] * dIdG[k](i, j);
         }
       }
     }
