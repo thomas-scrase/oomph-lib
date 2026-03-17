@@ -38,30 +38,24 @@
 
 namespace oomph
 {
-  class FibreReinforcedStrainEnergyFunction
-    : public virtual StrainEnergyFunction
+  class FibreReinforcedMooneyRivlin : public MooneyRivlin
   {
   public:
-    FibreReinforcedStrainEnergyFunction(double* c1_pt,
-                                        double* c2_pt,
-                                        double* c3_pt)
-      : StrainEnergyFunction(), C1_pt(c1_pt), C2_pt(c2_pt), C3_pt(c3_pt)
+    FibreReinforcedMooneyRivlin(double* c1_pt, double* c2_pt, double* c3_pt)
+      : MooneyRivlin(c1_pt, c2_pt), C3_pt(c3_pt)
     {
     }
 
-    virtual ~FibreReinforcedStrainEnergyFunction() {}
+    virtual ~FibreReinforcedMooneyRivlin() {}
 
-    double W(const Vector<double>& I)
+    double W(const Vector<double>& I) override
     {
-      return (*C1_pt) * (I[0] - 3.0) + (*C2_pt) * (I[1] - 3.0) +
-             (*C3_pt) * I[3];
+      return MooneyRivlin::W(I) + (*C3_pt) * I[3];
     }
 
     void derivatives(Vector<double>& I, Vector<double>& dWdI)
     {
-      dWdI[0] = (*C1_pt);
-      dWdI[1] = (*C2_pt);
-      dWdI[2] = 0.0;
+      MooneyRivlin::derivatives(I, dWdI);
       dWdI[3] = (*C3_pt);
     }
 
@@ -75,7 +69,9 @@ namespace oomph
 #ifdef RANGE_CHECKING
       if (fields.size() < dim)
       {
-        throw OomphLibError("Number of fields is not sufficient",
+        throw OomphLibError("Number of fields is not sufficient: " +
+                              std::to_string(fields.size()) + "<" +
+                              std::to_string(dim),
                             OOMPH_CURRENT_FUNCTION,
                             OOMPH_EXCEPTION_LOCATION);
       }
@@ -88,9 +84,106 @@ namespace oomph
         for (unsigned j = 0; j < dim; j++)
         {
           I[3] += fields[i] * G(i, j) * fields[j];
-          dIdG[3] = fields[i] * fields[j];
+          dIdG[3](i, j) = fields[i] * fields[j];
         }
       }
+    }
+
+    virtual void get_I_compressible(
+      const DenseMatrix<double>& g,
+      const DenseMatrix<double>& G,
+      const DenseMatrix<double>& gup,
+      const DenseMatrix<double>& Gup,
+      const double& detg,
+      const double& detG,
+      const Vector<double>& fields,
+      Vector<double>& I,
+      Vector<DenseMatrix<double>>& dIdG) const override
+    {
+      StrainEnergyFunction::get_I_compressible(
+        g, G, gup, Gup, detg, detG, fields, I, dIdG);
+      get_I_anisotropic(g, G, fields, I, dIdG);
+    }
+
+    virtual void get_I_incompressible(
+      const DenseMatrix<double>& g,
+      const DenseMatrix<double>& G,
+      const DenseMatrix<double>& gup,
+      const DenseMatrix<double>& Gup,
+      const double& detg,
+      const double& detG,
+      const Vector<double>& fields,
+      Vector<double>& I,
+      Vector<DenseMatrix<double>>& dIdG) const override
+    {
+      StrainEnergyFunction::get_I_incompressible(
+        g, G, gup, Gup, detg, detG, fields, I, dIdG);
+      get_I_anisotropic(g, G, fields, I, dIdG);
+    }
+
+    virtual void get_I_nearly_incompressible(
+      const DenseMatrix<double>& g,
+      const DenseMatrix<double>& G,
+      const DenseMatrix<double>& gup,
+      const DenseMatrix<double>& Gup,
+      const double& detg,
+      const double& detG,
+      const Vector<double>& fields,
+      Vector<double>& I,
+      Vector<DenseMatrix<double>>& dIdG) const override
+    {
+      StrainEnergyFunction::get_I_nearly_incompressible(
+        g, G, gup, Gup, detg, detG, fields, I, dIdG);
+      get_I_anisotropic(g, G, fields, I, dIdG);
+    }
+
+  private:
+    double* C3_pt;
+  };
+
+  class ThermalSofteningMooneyRivlin : public StrainEnergyFunction
+  {
+  public:
+    ThermalSofteningMooneyRivlin(double* c1_pt, double* c2_pt)
+      : StrainEnergyFunction(), C1_pt(c1_pt), C2_pt(c2_pt)
+    {
+    }
+
+    virtual ~ThermalSofteningMooneyRivlin() {}
+
+    double W(const Vector<double>& I) override
+    {
+      return (*C1_pt) * I[3] * (I[0] - 3.0) + (*C2_pt) * (I[1] - 3.0);
+    }
+
+    void derivatives(Vector<double>& I, Vector<double>& dWdI)
+    {
+      dWdI[0] = (*C1_pt) * I[3];
+      dWdI[1] = (*C2_pt);
+      dWdI[2] = 0.0;
+      dWdI[3] = (*C1_pt) * (I[0] - 3.0);
+    }
+
+    void get_I_anisotropic(const DenseMatrix<double>& g,
+                           const DenseMatrix<double>& G,
+                           const Vector<double>& fields,
+                           Vector<double>& I,
+                           Vector<DenseMatrix<double>>& dIdG) const
+    {
+      const unsigned dim = g.nrow();
+#ifdef RANGE_CHECKING
+      if (fields.size() < 1)
+      {
+        throw OomphLibError("Number of fields is not sufficient",
+                            OOMPH_CURRENT_FUNCTION,
+                            OOMPH_EXCEPTION_LOCATION);
+      }
+#endif
+      // We resize the invariants, the existing invariants should be unaffected
+      I.resize(4);
+      dIdG.resize(4, DenseMatrix<double>(dim));
+      I[3] = fields[0];
+      dIdG[3] = DenseMatrix<double>(dim, dim, 0.0);
     }
 
     virtual void get_I_compressible(
