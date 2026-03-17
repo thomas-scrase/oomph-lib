@@ -141,11 +141,11 @@ namespace oomph
     double* C3_pt;
   };
 
-  class ThermalSofteningMooneyRivlin : public StrainEnergyFunction
+  class ThermalSofteningMooneyRivlin : public MooneyRivlin
   {
   public:
     ThermalSofteningMooneyRivlin(double* c1_pt, double* c2_pt)
-      : StrainEnergyFunction(), C1_pt(c1_pt), C2_pt(c2_pt)
+      : MooneyRivlin(c1_pt, c2_pt)
     {
     }
 
@@ -153,15 +153,21 @@ namespace oomph
 
     double W(const Vector<double>& I) override
     {
-      return (*C1_pt) * I[3] * (I[0] - 3.0) + (*C2_pt) * (I[1] - 3.0);
+      return (1.0 - I[3]) * MooneyRivlin::W(I);
     }
 
     void derivatives(Vector<double>& I, Vector<double>& dWdI)
     {
-      dWdI[0] = (*C1_pt) * I[3];
-      dWdI[1] = (*C2_pt);
+      MooneyRivlin::derivatives(I,dWdI);
+      dWdI[0] *= (1.0 - I[3]);
+      dWdI[1] *= (1.0 - I[3]);
       dWdI[2] = 0.0;
-      dWdI[3] = (*C1_pt) * (I[0] - 3.0);
+      dWdI[3] = -MooneyRivlin::W(I);
+    }
+
+    bool requires_incompressibility_constraint()
+    {
+      return true;
     }
 
     void get_I_anisotropic(const DenseMatrix<double>& g,
@@ -182,6 +188,8 @@ namespace oomph
       // We resize the invariants, the existing invariants should be unaffected
       I.resize(4);
       dIdG.resize(4, DenseMatrix<double>(dim));
+
+      // The only additional invariant is just the temperature
       I[3] = fields[0];
       dIdG[3] = DenseMatrix<double>(dim, dim, 0.0);
     }
