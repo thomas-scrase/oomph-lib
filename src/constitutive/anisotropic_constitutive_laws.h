@@ -158,7 +158,7 @@ namespace oomph
 
     void derivatives(Vector<double>& I, Vector<double>& dWdI)
     {
-      MooneyRivlin::derivatives(I,dWdI);
+      MooneyRivlin::derivatives(I, dWdI);
       dWdI[0] *= (1.0 - I[3]);
       dWdI[1] *= (1.0 - I[3]);
       dWdI[2] = 0.0;

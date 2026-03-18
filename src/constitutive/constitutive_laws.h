@@ -168,15 +168,16 @@ namespace oomph
       }
     }
 
-    virtual void get_I_nearly_incompressible(const DenseMatrix<double>& g,
-                                             const DenseMatrix<double>& G,
-                                             const DenseMatrix<double>& gup,
-                                             const DenseMatrix<double>& Gup,
-                                             const double& detg,
-                                             const double& detG,
-                                             const Vector<double>& fields,
-                                             Vector<double>& I,
-                                             Vector<DenseMatrix<double>>& dIdG) const
+    virtual void get_I_nearly_incompressible(
+      const DenseMatrix<double>& g,
+      const DenseMatrix<double>& G,
+      const DenseMatrix<double>& gup,
+      const DenseMatrix<double>& Gup,
+      const double& detg,
+      const double& detG,
+      const Vector<double>& fields,
+      Vector<double>& I,
+      Vector<DenseMatrix<double>>& dIdG) const
     {
       I.resize(3, 0.0);
       // Find the dimension of the problem
