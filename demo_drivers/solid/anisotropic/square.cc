@@ -23,7 +23,6 @@
 // LIC// The authors may be contacted at oomph-lib@maths.man.ac.uk.
 // LIC//
 // LIC//====================================================================
-// kruemelmonster
 // Driver for a simple 2D anisotropic solid problem
 
 // Generic oomph-lib routines
@@ -49,16 +48,8 @@ namespace GlobalParameters
   double c2 = 1.0;
   double c3 = 1.0;
 
-  // StrainEnergyFunction* strain_energy_fct_pt =
-  //   new FibreReinforcedMooneyRivlin(&c1, &c2, &c3);
-
-  StrainEnergyFunction* strain_energy_fct_pt =
-    new ThermalSofteningMooneyRivlin(&c1, &c2);
-  // StrainEnergyFunction* strain_energy_fct_pt = new
-  // GeneralisedMooneyRivlin(&c1,&c2);
-  ConstitutiveLaw* constitutive_law_pt =
-    new IsotropicStrainEnergyFunctionConstitutiveLaw(strain_energy_fct_pt);
-  // ConstitutiveLaw* constitutive_law_pt = new GeneralisedHookean(&c1,&c2);
+  StrainEnergyFunction* strain_energy_fct_pt;
+  ConstitutiveLaw* constitutive_law_pt;
 
   double Gravity = 0.0;
 
@@ -74,7 +65,7 @@ namespace GlobalParameters
               const Vector<double>& xi,
               Vector<double>& fields)
   {
-    if(ThermalTest)
+    if (ThermalTest)
     {
       fields.resize(1);
       fields[0] = pow((4.0 - xi[0]) / 4.0, 3.0);
@@ -85,7 +76,6 @@ namespace GlobalParameters
       fields[0] = cos(0.5 * MathematicalConstants::Pi * xi[0] / 4.0);
       fields[1] = sin(0.5 * MathematicalConstants::Pi * xi[0] / 4.0);
     }
-
   }
 
 } // namespace GlobalParameters
@@ -118,8 +108,6 @@ public:
 
 //=====start_of_constructor===============================================
 /// Constructor for 2D anisotropic pvd problem in unit interval.
-/// Discretise the 1D domain with n_element elements of type ELEMENT.
-/// Specify function pointer to source function.
 //========================================================================
 template<class ELEMENT>
 AnisotropicSolidProblem<ELEMENT>::AnisotropicSolidProblem(
@@ -133,7 +121,6 @@ AnisotropicSolidProblem<ELEMENT>::AnisotropicSolidProblem(
   // Set the boundary conditions for this problem: By default, all nodal
   // values are free -- we only need to pin the ones that have
   // Dirichlet conditions.
-
   for (unsigned l = 0; l < Problem::mesh_pt()->nboundary_node(2); l++)
   {
     dynamic_cast<SolidNode*>(mesh_pt()->boundary_node_pt(2, l))
@@ -154,6 +141,7 @@ AnisotropicSolidProblem<ELEMENT>::AnisotropicSolidProblem(
 
     elem_pt->constitutive_law_pt() = GlobalParameters::constitutive_law_pt;
 
+    //  both example constitutive laws require incompressibility
     elem_pt->set_incompressible();
 
     //  body_force_fct_pt
@@ -162,7 +150,6 @@ AnisotropicSolidProblem<ELEMENT>::AnisotropicSolidProblem(
     //  fields_fct_pt
     elem_pt->fields_fct_pt() = &GlobalParameters::fields;
   }
-  // dynamic_cast<ELEMENT*>(mesh_pt()->element_pt(0))->fix_solid_pressure(0,0.0);
 
   // Setup equation numbering scheme
   assign_eqn_numbers();
@@ -227,15 +214,18 @@ int main()
     problem.doc_solution(0);
     for (unsigned i = 1; i < 10; i++)
     {
-      // modify gravity
       problem.newton_solve();
 
       problem.doc_solution(i);
-
+      // ramp up gravity
       GlobalParameters::Gravity += 1e-1;
     }
   }
 
+  delete GlobalParameters::strain_energy_fct_pt;
+  GlobalParameters::strain_energy_fct_pt = 0;
+  delete GlobalParameters::constitutive_law_pt;
+  GlobalParameters::constitutive_law_pt = 0;
 
   // Solve the fibre reinforced model
   {
@@ -264,13 +254,16 @@ int main()
     problem.doc_solution(0);
     for (unsigned i = 1; i < 10; i++)
     {
-      // modify gravity
       problem.newton_solve();
 
       problem.doc_solution(i);
-
+      // ramp up gravity
       GlobalParameters::Gravity += 1e-1;
     }
   }
+  delete GlobalParameters::strain_energy_fct_pt;
+  GlobalParameters::strain_energy_fct_pt = 0;
+  delete GlobalParameters::constitutive_law_pt;
+  GlobalParameters::constitutive_law_pt = 0;
 
 } // end of main
