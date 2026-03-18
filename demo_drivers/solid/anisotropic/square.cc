@@ -68,17 +68,24 @@ namespace GlobalParameters
     b[1] = -Gravity;
   }
 
+  bool ThermalTest = true;
   void fields(const unsigned& ipt,
               const Vector<double>& s,
               const Vector<double>& xi,
               Vector<double>& fields)
   {
-    // fields.resize(2);
-    // fields[0] = cos(0.5 * MathematicalConstants::Pi * xi[0] / 4.0);
-    // fields[1] = sin(0.5 * MathematicalConstants::Pi * xi[0] / 4.0);
+    if(ThermalTest)
+    {
+      fields.resize(1);
+      fields[0] = pow((4.0 - xi[0]) / 4.0, 3.0);
+    }
+    else
+    {
+      fields.resize(2);
+      fields[0] = cos(0.5 * MathematicalConstants::Pi * xi[0] / 4.0);
+      fields[1] = sin(0.5 * MathematicalConstants::Pi * xi[0] / 4.0);
+    }
 
-    fields.resize(1);
-    fields[0] = pow((4.0 - xi[0]) / 4.0, 3.0);
   }
 
 } // namespace GlobalParameters
@@ -195,6 +202,7 @@ int main()
 {
   // Solve the thermal softening model
   {
+    GlobalParameters::ThermalTest = true;
     GlobalParameters::strain_energy_fct_pt = new ThermalSofteningMooneyRivlin(
       &GlobalParameters::c1, &GlobalParameters::c2);
     GlobalParameters::constitutive_law_pt =
@@ -231,6 +239,7 @@ int main()
 
   // Solve the fibre reinforced model
   {
+    GlobalParameters::ThermalTest = false;
     GlobalParameters::strain_energy_fct_pt = new FibreReinforcedMooneyRivlin(
       &GlobalParameters::c1, &GlobalParameters::c2, &GlobalParameters::c3);
     GlobalParameters::constitutive_law_pt =
