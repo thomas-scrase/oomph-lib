@@ -29,7 +29,7 @@ oomph_add_executable(
 
 oomph_add_test(
   TEST_NAME solid.anisotropic
-  DEPENDS_ON square 
+  DEPENDS_ON square
   COMMAND ./validate.sh ${OOMPH_ROOT_DIR}
   TEST_FILES validate.sh validata)
 
