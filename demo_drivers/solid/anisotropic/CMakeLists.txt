@@ -9,39 +9,29 @@ if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/CMakeCache.txt"
 endif()
 # ------------------------------------------------------------------------------
 list(APPEND CMAKE_MESSAGE_INDENT " ")
-message(VERBOSE "Entered solid subdirectory")
+message(VERBOSE "Entered anisotropic subdirectory")
 
 cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
-project(solid C CXX Fortran)
+project(anisotropic C CXX Fortran)
 
 if(NOT oomphlib_FOUND)
-  find_package(oomphlib CONFIG REQUIRED PATHS "../../install")
+  find_package(oomphlib CONFIG REQUIRED PATHS "../../../install")
 endif()
 
 include(CTest)
 
-set(SUBDIRS
-    disk_compression
-    disk_oscillation
-    shock_disk
-    static_fish
-    airy_cantilever
-    three_d_cantilever
-    simple_shear
-    compressed_square
-    prescribed_displ_lagr_mult
-    three_d_prescribed_displ_lagr_mult
-    three_d_traction
-    pseudo_solid_collapsible_channel
-    vmtk_solid
-    unstructured_solid
-    unstructured_three_d_solid
-    unstructured_adaptive_solid
-    anisotropic)
+oomph_add_executable(
+  NAME square
+  SOURCES square.cc
+  LIBRARIES oomph::solid oomph::constitutive oomph::meshes oomph::generic)
 
-foreach(SUBDIR IN LISTS SUBDIRS)
-  add_subdirectory(${SUBDIR})
-endforeach()
+# ---------------------------------- TESTING ----------------------------------
 
-message(VERBOSE "Leaving solid subdirectory")
+oomph_add_test(
+  TEST_NAME solid.anisotropic
+  DEPENDS_ON square 
+  COMMAND ./validate.sh ${OOMPH_ROOT_DIR}
+  TEST_FILES validate.sh validata)
+
+message(VERBOSE "Leaving anisotropic subdirectory")
 # ------------------------------------------------------------------------------

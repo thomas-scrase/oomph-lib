@@ -175,7 +175,8 @@ void AnisotropicSolidProblem<ELEMENT>::doc_solution(const unsigned& label)
   npts = 5;
 
   // Output solution with specified number of plot points per element
-  ofstream solution_file((Filename + to_string(label) + ".dat").c_str());
+  ofstream solution_file(
+    ("RESLT/" + Filename + to_string(label) + ".dat").c_str());
   mesh_pt()->output(solution_file, npts);
   solution_file.close();
 
