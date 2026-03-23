@@ -23,7 +23,7 @@ include(CTest)
 oomph_add_executable(
   NAME driven_cavity
   SOURCES driven_cavity.cc
-  LIBRARIES oomph::navier_stokes oomph::meshes oomph::generic)
+  LIBRARIES oomph::generalised_fluid oomph::meshes oomph::generic)
 
 # ---------------------------------- TESTING ----------------------------------
 
