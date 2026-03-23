@@ -3,10 +3,7 @@ list(APPEND CMAKE_MESSAGE_INDENT " ")
 message(VERBOSE "Entered generalised_fluid subdirectory")
 
 # Define the headers
-set(HEADERS
-    generalised_fluid_elements.h
-    generalised_fluid_constitutive_law.h
-    )
+set(HEADERS generalised_fluid_elements.h generalised_fluid_constitutive_law.h)
 # old_multi_domain_boussinesq_elements.h
 
 # Define the sources
