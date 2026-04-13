@@ -79,6 +79,7 @@ namespace oomph
       // We resize the invariants, the existing invariants should be unaffected
       I.resize(4);
       dIdG.resize(4, DenseMatrix<double>(dim));
+      I[3] = 0.0;
       for (unsigned i = 0; i < dim; i++)
       {
         for (unsigned j = 0; j < dim; j++)
@@ -100,8 +101,10 @@ namespace oomph
       Vector<double>& I,
       Vector<DenseMatrix<double>>& dIdG) const override
     {
+      // Compute the isotropic invariants
       StrainEnergyFunction::get_I_compressible(
         g, G, gup, Gup, detg, detG, fields, I, dIdG);
+      // Compute the anisotropic invariants
       get_I_anisotropic(g, G, fields, I, dIdG);
     }
 
@@ -116,8 +119,10 @@ namespace oomph
       Vector<double>& I,
       Vector<DenseMatrix<double>>& dIdG) const override
     {
+      // Compute the isotropic invariants
       StrainEnergyFunction::get_I_incompressible(
         g, G, gup, Gup, detg, detG, fields, I, dIdG);
+      // Compute the anisotropic invariants
       get_I_anisotropic(g, G, fields, I, dIdG);
     }
 
@@ -132,8 +137,10 @@ namespace oomph
       Vector<double>& I,
       Vector<DenseMatrix<double>>& dIdG) const override
     {
+      // Compute the isotropic invariants
       StrainEnergyFunction::get_I_nearly_incompressible(
         g, G, gup, Gup, detg, detG, fields, I, dIdG);
+      // Compute the anisotropic invariants
       get_I_anisotropic(g, G, fields, I, dIdG);
     }
 
@@ -205,8 +212,10 @@ namespace oomph
       Vector<double>& I,
       Vector<DenseMatrix<double>>& dIdG) const override
     {
+      // Compute the isotropic invariants
       StrainEnergyFunction::get_I_compressible(
         g, G, gup, Gup, detg, detG, fields, I, dIdG);
+      // Compute the anisotropic invariants
       get_I_anisotropic(g, G, fields, I, dIdG);
     }
 
@@ -221,8 +230,10 @@ namespace oomph
       Vector<double>& I,
       Vector<DenseMatrix<double>>& dIdG) const override
     {
+      // Compute the isotropic invariants
       StrainEnergyFunction::get_I_incompressible(
         g, G, gup, Gup, detg, detG, fields, I, dIdG);
+      // Compute the anisotropic invariants
       get_I_anisotropic(g, G, fields, I, dIdG);
     }
 
@@ -237,8 +248,10 @@ namespace oomph
       Vector<double>& I,
       Vector<DenseMatrix<double>>& dIdG) const override
     {
+      // Compute the isotropic invariants
       StrainEnergyFunction::get_I_nearly_incompressible(
         g, G, gup, Gup, detg, detG, fields, I, dIdG);
+      // Compute the anisotropic invariants
       get_I_anisotropic(g, G, fields, I, dIdG);
     }
 
