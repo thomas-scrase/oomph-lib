@@ -16,7 +16,7 @@ namespace oomph
                                const double& e,
                                double& residual) const
     {
-      residual = p * rho - e;
+      residual = p - e * rho;
     }
 
     void get_deviatoric_stress(const DenseMatrix<double>& dudx,
@@ -39,7 +39,7 @@ namespace oomph
       const double eta_inf = 1.0;
       const double eta0 = 0.0;
       const double lambda = 1.0;
-      const double n = 2.0;
+      const double n = 1.0;
 
       const double eta =
         eta0 +
@@ -49,9 +49,20 @@ namespace oomph
       {
         for (unsigned j = 0; j < dim; j++)
         {
-          // sigma(i, j) = 0.5 * (dudx(i, j) + dudx(j, i));
           sigma(i, j) = eta * D(i, j);
         }
+      }
+
+      // We always need the deviatoric stress tensor
+      double tr = 0.0;
+      for (unsigned i = 0; i < dim; i++)
+      {
+        tr += sigma(i, i);
+      }
+
+      for (unsigned i = 0; i < dim; i++)
+      {
+        sigma(i, i) -= tr / 3.0;
       }
     }
   };

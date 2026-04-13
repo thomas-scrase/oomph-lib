@@ -36,6 +36,7 @@ namespace oomph
 
     // Set up memory for pressure shape and test functions
     Shape psip(n_pres), testp(n_pres);
+    DShape dpsipdx(n_pres, DIM), dtestpdx(n_pres, DIM);
 
     // Number of integration points
     unsigned n_intpt = this->integral_pt()->nweight();
@@ -60,7 +61,7 @@ namespace oomph
         ipt, psif, dpsifdx, testf, dtestfdx);
 
       // Call the pressure shape and test functions
-      this->pshape_nst(s, psip, testp);
+      this->dpshape_and_dptest_eulerian_nst(s, psip, dpsipdx, testp, dtestpdx);
 
       // Premultiply the weights and the Jacobian
       double W = w * J;
@@ -168,24 +169,16 @@ namespace oomph
         local_eqn = this->p_local_eqn(l);
         if (local_eqn >= 0)
         {
-          residuals[local_eqn] -= source * testp[l] * W;
+          double temp = 0.0;
+          temp += source;
           for (unsigned k = 0; k < DIM; k++)
           {
-            residuals[local_eqn] -=
-              interpolated_rho * interpolated_dudx(k, k) * testp[l] * W;
+            temp += interpolated_rho * interpolated_dudx(k, k);
           }
+          // TODO Add thermal expansion
+          //  temp -= thermal_expansion;
 
-          if (!Incompressible)
-          {
-            residuals[local_eqn] -= drhodt * testp[l] * W;
-            for (unsigned k = 0; k < DIM; k++)
-            {
-              double tmp = interpolated_u[k];
-              if (!this->ALE_is_disabled) tmp -= mesh_velocity[k];
-              residuals[local_eqn] -=
-                tmp * interpolated_drhodx[k] * testp[l] * W;
-            }
-          }
+          residuals[local_eqn] += temp * psip[l] * W;
         }
       }
 
@@ -200,26 +193,21 @@ namespace oomph
           {
             residuals[local_eqn] += body_force[i] * testf[l] * W;
 
-            residuals[local_eqn] += testf[l] * G[i] * W;
+            residuals[local_eqn] += interpolated_rho * G[i] * testf[l] * W;
 
+            for (unsigned j = 0; j < DIM; j++)
+            {
+              double temp = 0.0;
+              temp += interpolated_rho * interpolated_u[i] * interpolated_u[j];
+              temp -= deviatoric_stress(i, j);
+
+              residuals[local_eqn] += temp * dtestfdx(l, j) * W;
+            }
             residuals[local_eqn] += interpolated_p * dtestfdx(l, i) * W;
 
-
-            for (unsigned k = 0; k < DIM; k++)
-            {
-              residuals[local_eqn] -=
-                deviatoric_stress(i, k) * dtestfdx(l, k) * W;
-            }
-
-            residuals[local_eqn] -= interpolated_rho * dudt[i] * testf[l] * W;
-
-            for (unsigned k = 0; k < DIM; k++)
-            {
-              double tmp = interpolated_u[k];
-              if (!this->ALE_is_disabled) tmp -= mesh_velocity[k];
-              residuals[local_eqn] -=
-                interpolated_rho * tmp * interpolated_dudx(i, k) * testf[l] * W;
-            }
+            residuals[local_eqn] -=
+              (interpolated_rho * dudt[i] + drhodt * interpolated_u[i]) *
+              testf[l] * W;
           }
         }
 
@@ -230,14 +218,16 @@ namespace oomph
         {
           if (Incompressible)
           {
-            residuals[local_eqn] -= drhodt * testf[l] * W;
+            double temp = 0.0;
+            temp -= drhodt;
+            // TODO Add thermal expansion
+            //  temp += thermal_expansion;
+            residuals[local_eqn] += temp * psif[l] * W;
 
-            for (unsigned k = 0; k < DIM; k++)
+            for (unsigned j = 0; j < DIM; j++)
             {
-              double tmp = interpolated_u[k];
-              if (!this->ALE_is_disabled) tmp -= mesh_velocity[k];
-              residuals[local_eqn] -=
-                tmp * interpolated_drhodx[k] * testf[l] * W;
+              residuals[local_eqn] +=
+                interpolated_rho * interpolated_u[j] * dpsifdx(l, j) * W;
             }
           }
           else
@@ -251,29 +241,22 @@ namespace oomph
         local_eqn = this->nodal_local_eqn(l, e_nodal_index);
         if (local_eqn >= 0)
         {
-          for (unsigned k = 0; k < DIM; k++)
+          for (unsigned j = 0; j < DIM; j++)
           {
-            residuals[local_eqn] += thermal_flux[k] * dtestfdx(l, k) * W;
-
-            for (unsigned kk = 0; kk < DIM; kk++)
+            double temp = 0.0;
+            temp += (interpolated_rho * interpolated_e + interpolated_p) *
+                    interpolated_u[j];
+            for (unsigned i = 0; i < DIM; i++)
             {
-              residuals[local_eqn] -= deviatoric_stress(k, kk) *
-                                      interpolated_dudx(k, kk) * testf[l] * W;
+              temp -= interpolated_u[i] * deviatoric_stress(i, j);
             }
+            temp += thermal_flux[j];
+            residuals[local_eqn] += temp * dtestfdx(l, j) * W;
           }
+          residuals[local_eqn] += thermal_source * testf[l] * W;
 
-          residuals[local_eqn] -= interpolated_rho * dedt * testf[l] * W;
-
-          for (unsigned k = 0; k < DIM; k++)
-          {
-            double tmp = interpolated_u[k];
-            if (!this->ALE_is_disabled) tmp -= mesh_velocity[k];
-            residuals[local_eqn] -=
-              interpolated_rho * tmp * interpolated_dedx[k] * testf[l] * W;
-
-            residuals[local_eqn] -=
-              interpolated_rho * thermal_source * testf[l] * W;
-          }
+          residuals[local_eqn] -=
+            (drhodt * interpolated_e + interpolated_rho * dedt) * testf[l] * W;
         }
       }
     }

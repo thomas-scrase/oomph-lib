@@ -25,6 +25,12 @@
 // LIC//====================================================================
 // Driver for 2D rectangular driven cavity
 
+
+//TODO:
+
+// Diverges for compressible flow.
+
+
 // Generic includes
 #include "generic.h"
 #include "generalised_fluid.h"
@@ -42,12 +48,9 @@ using namespace oomph;
 //==================================================
 namespace Global_Physical_Variables
 {
-
-  /// Reynolds number
-  double Re = 100;
+  Vector<double> Direction_of_gravity{0.0, -9.81};
 
 } // namespace Global_Physical_Variables
-
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -93,7 +96,7 @@ public:
     {
       // Tangential flow
       unsigned i = 0;
-      mesh_pt()->boundary_node_pt(ibound, inod)->set_value(i, 1.0);
+      mesh_pt()->boundary_node_pt(ibound, inod)->set_value(i, 0.0);
       // No penetration
       i = 1;
       mesh_pt()->boundary_node_pt(ibound, inod)->set_value(i, 0.0);
@@ -156,6 +159,17 @@ RectangularDrivenCavityProblem<ELEMENT>::RectangularDrivenCavityProblem()
   Problem::mesh_pt() = new SimpleRectangularQuadMesh<ELEMENT>(
     n_x, n_y, l_x, l_y, this->time_stepper_pt());
 
+  for (unsigned l = 0; l < mesh_pt()->nnode(); l++)
+  {
+    const double x = mesh_pt()->node_pt(l)->x(0);
+    const double y = mesh_pt()->node_pt(l)->x(1);
+    mesh_pt()->node_pt(l)->set_value(
+      2, 1.0 - (1e-1 * sin(4.0 * 3.14159 * x) + 0.5) * (y < 0.5));
+    // mesh_pt()->node_pt(l)->set_value(2, 1.0);
+
+    mesh_pt()->node_pt(l)->set_value(3, 1.0);
+  }
+
   // Set the boundary conditions for this problem: All nodes are
   // free by default -- just pin the ones that have Dirichlet conditions
   // here.
@@ -170,14 +184,20 @@ RectangularDrivenCavityProblem<ELEMENT>::RectangularDrivenCavityProblem()
       {
         mesh_pt()->boundary_node_pt(ibound, inod)->pin(i);
       }
+
+      // if (ibound == 0)
+      // {
+      //   mesh_pt()->boundary_node_pt(ibound, inod)->pin(3);
+      //   mesh_pt()->boundary_node_pt(ibound, inod)->set_value(3, 2.0);
+      // }
+      // else if (ibound == 2)
+      // {
+      //   mesh_pt()->boundary_node_pt(ibound, inod)->pin(3);
+      //   mesh_pt()->boundary_node_pt(ibound, inod)->set_value(3, 1.0);
+      // }
     }
   } // end loop over boundaries
 
-  for (unsigned l = 0; l < mesh_pt()->nnode(); l++)
-  {
-    mesh_pt()->node_pt(l)->set_value(2, 1.0);
-    mesh_pt()->node_pt(l)->set_value(3, 1.0);
-  }
 
   // Complete the build of all elements so they are fully functional
 
@@ -193,8 +213,8 @@ RectangularDrivenCavityProblem<ELEMENT>::RectangularDrivenCavityProblem()
 
     el_pt->set_incompressible();
 
-    // Set the Reynolds number
-    //  el_pt->re_pt() = &Global_Physical_Variables::Re;
+    // Set Gravity vector
+    el_pt->g_pt() = &Global_Physical_Variables::Direction_of_gravity;
 
   } // end loop over elements
 
@@ -271,7 +291,7 @@ int main()
     problem.doc_solution(doc_info);
     doc_info.number()++;
 
-    for (unsigned i = 0; i < 10; i++)
+    for (unsigned i = 0; i < 200; i++)
     {
       // Solve the problem
       problem.unsteady_newton_solve(0.1);
