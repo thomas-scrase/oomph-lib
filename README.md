@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="http://oomph-lib.maths.man.ac.uk">
+  <a href="https://oomph-lib.github.io/oomph-lib">
     <img alt="reviewdog" src="./doc/figures/oomph_logo.png">
   </a>
 </div>
@@ -58,9 +58,9 @@
 - [Prerequisites](#prerequisites)
   - [CMake](#cmake)
   - [Ninja](#ninja)
-  - [[macOS only: OpenBLAS]](#macos-only-openblas)
+  - [\[macOS only: OpenBLAS\]](#macos-only-openblas)
   - [Compilers](#compilers)
-  - [Other tools (and how to install all the prerequisites)](#other-tools-and-how-to-install-all-the-prerequisites-in-one-go)
+  - [Other tools (and how to install all the prerequisites in one go)](#other-tools-and-how-to-install-all-the-prerequisites-in-one-go)
 - [Building, installing and uninstalling `oomph-lib`](#building-installing-and-uninstalling-oomph-lib)
   - [Required/optional third-party libraries](#requiredoptional-third-party-libraries)
   - [Step 1: Installing the third-party libraries](#step-1-installing-the-third-party-libraries)
@@ -120,15 +120,15 @@
     - [Autotools](#autotools-5)
     - [CMake](#cmake-6)
 - [Dos and Don'ts](#dos-and-donts)
-- [FAQs](#faq)
-  - [When configuring my driver code CMake can't find the package configuration file. Now what?](#when-configuring-my-driver-code-cmake-cant-find-the-package-configuration-file)
+- [FAQ](#faq)
+  - [When configuring my driver code CMake can't find the package configuration file](#when-configuring-my-driver-code-cmake-cant-find-the-package-configuration-file)
   - [Are there any complete worked examples of the build process?](#are-there-any-complete-worked-examples-of-the-build-process)
-  - [What happened to the `user_src` directory?](#im-used-to-the-autotools-based-version-of-oomph-lib-what-happened-to-the-user_src-directory)
-  - [What happened to the `bin` directory?](#im-used-to-the-autotools-based-version-of-oomph-lib-what-happened-to-the-bin-directory)
+  - [I'm used to the Autotools-based version of `oomph-lib`; what happened to the `user_src` directory?](#im-used-to-the-autotools-based-version-of-oomph-lib-what-happened-to-the-user_src-directory)
+  - [I'm used to the Autotools-based version of `oomph-lib`; what happened to the `bin` directory?](#im-used-to-the-autotools-based-version-of-oomph-lib-what-happened-to-the-bin-directory)
 - [Additional information for developers](#additional-information-for-developers)
   - [Use symbolic links for header files](#use-symbolic-links-for-header-files)
-  - [Paranoia and range checking are incompatible with Release mode](#paranoia-and-range-checking-are-deemed-to-be-incompatible-with-release-mode)
-  - [How to add additional compiler macros to `oomph-lib` (and to stand-alone driver codes)](#how-to-add-additional-compiler-macros-to-oomph-lib-and-to-stand-alone-driver-codes)
+  - [Paranoia and range checking are deemed to be incompatible with Release mode](#paranoia-and-range-checking-are-deemed-to-be-incompatible-with-release-mode)
+  - [How to add additional compiler macros to oomph-lib (and to stand-alone driver codes)](#how-to-add-additional-compiler-macros-to-oomph-lib-and-to-stand-alone-driver-codes)
   - [Creating robust `validata` for self tests](#creating-robust-validata-for-self-tests)
     - [A self-test fails even though the output files produced by the code are correct](#a-self-test-fails-even-though-the-output-files-produced-by-the-code-are-correct)
     - [Handling non-deterministic output](#handling-non-deterministic-output)
@@ -138,7 +138,7 @@
   - [CMake resources](#cmake-resources)
   - [Building CMake](#building-cmake)
     - [Ubuntu](#ubuntu)
-    - [macOS](#macos)
+  - [macOS](#macos)
 
 
 
@@ -201,6 +201,9 @@ sudo apt install ninja-build
 
 will do the trick.
 
+> [!CAUTION]
+> If you don't specify [Ninja](https://github.com/ninja-build/ninja) as the build system generator (see below for details), CMake will perform the build using Unix Makefiles. This typically results in a slower build, but worse, can also cause problems with the build of certain third-party libraries (METIS in particular) on older operating systems. Please use Ninja!
+
 ### [macOS only: OpenBLAS]
 
 > [!IMPORTANT]
@@ -245,10 +248,10 @@ sudo apt-get install git cmake ninja python3 doxygen gfortran g++ texlive texliv
 | Library        | Required/optional | Built by default by `oomph_build.py` (serial build)? | Built by default by `oomph_build.py` (MPI build)?  | Version |
 | ----           | ---               | -----                    | ---                    | ---     | 
 | `OpenBLAS`     | required by `oomph-lib`              | Yes | Yes |  [0.3.25](https://github.com/OpenMathLib/OpenBLAS/tree/v0.3.29)      |
-| `SuperLU`       | required by `oomph-lib`               | Yes | Yes | [v6.0.1](https://github.com/xiaoyeli/superlu/tree/v6.0.1) | 
+| `SuperLU`       | required by `oomph-lib`               | Yes | Yes | [v7.0.1](https://github.com/xiaoyeli/superlu/tree/v7.0.1) | 
 | `METIS`        | required by `oomph-lib` (via `SuperLU`) | Yes | Yes | [commit `a6e6a2cfa92f93a3ee2971ebc9ddfc3b0b581ab2`](https://github.com/KarypisLab/METIS/tree/a6e6a2cfa92f93a3ee2971ebc9ddfc3b0b581ab2)  |              
 `GKlib`          | required by `oomph-lib` (via `METIS`)  | Yes | Yes | [commit `6e7951358fd896e2abed7887196b6871aac9f2f8`](https://github.com/KarypisLab/GKlib/tree/6e7951358fd896e2abed7887196b6871aac9f2f8)    |
-| `SuperLU_DIST` | required for `oomph-lib` MPI build                   | No | Yes | [v9.1.0](https://github.com/xiaoyeli/superlu_dist/tree/v9.1.0)  
+| `SuperLU_DIST` | required for `oomph-lib` MPI build                   | No | Yes | [v9.2.1](https://github.com/xiaoyeli/superlu_dist/tree/v9.2.1)  
 | `ParMETIS`     | required for `oomph-lib` MPI build (via `SuperLU_DIST`)                  | No | Yes | [commit `83bb3d4f5b2af826d0683329cad1accc8d829de2`](https://github.com/puneetmatharu/ParMETIS/tree/83bb3d4f5b2af826d0683329cad1accc8d829de2) | 
 | `CGAL`         | optional, highly recommended                        | Yes | Yes | [6.0.1](https://github.com/CGAL/cgal/tree/v6.0.1)                                                                 |
 | `Boost`        | required by `CGAL`                          | Yes | Yes | [1.83.0](https://github.com/boostorg/boost/tree/boost-1.83.0)                                                                             |
@@ -292,7 +295,19 @@ cmake --build build
 ```
 
 > [!TIP]
-> Make sure you delete the `build` directory if it already exists from a previous installation. Having it there can confuse `cmake`.
+>
+> Make sure you delete the `build` directory if it already exists from a previous installation. Having it there can result in problems with CMake.
+
+> [!CAUTION]
+>
+> You can omit the specification of [Ninja](https://github.com/ninja-build/ninja) as the build tool and replace the configure command by
+>
+> ```bash
+> # Configure the third party library build
+> cmake -B build
+> ```
+>
+> CMake will then perform the build using Unix Makefiles. This typically results in a slower build, but worse, can also cause problems with the build of certain third-party libraries (METIS in particular) on older operating systems, so we don't recommend this.
 
 At the end of the configure step you get a summary of the build options used, e.g.
 
@@ -526,6 +541,30 @@ The `oomph_build.py` script is provided as a convenient one-stop solution for bu
 > [!IMPORTANT]
 > In addition to the standard requirements (CMake and Ninja, as described above), you will need a working Python 3 installation to run `oomph_build.py`. Ensure that `python3` is available in your `PATH`. If you plan to use the script's documentation-building feature (described below), make sure `doxygen` is installed as well.
 
+> [!NOTE]
+> By default, Ninja may run more build jobs than there are CPU cores. On some
+> systems this can cause the build to overwhelm the machine. The
+> `oomph_build.py` script therefore limits the build stage for the third-party
+> libraries, the main project, and the documentation to two fewer jobs than the
+> number of CPU cores by default.
+>
+> You can override this value with the `-j`/`--parallel` flag, or use all CPU
+> cores by passing `--use-max-jobs`. The `--use-max-jobs` flag cannot be
+> combined with `-j`/`--parallel`.
+>
+> If you are using raw CMake commands rather than `oomph_build.py`, and you are
+> not sure that your system can handle Ninja's default parallelism, set
+> `CMAKE_BUILD_PARALLEL_LEVEL` before running a Ninja build. For example, the
+> following command limits CMake build steps to two fewer jobs than the number
+> of CPU cores:
+>
+> ```bash
+> export CMAKE_BUILD_PARALLEL_LEVEL=$(python3 -c "import os; n=os.cpu_count() or 1; print(max(1, n - 2))")
+> ```
+>
+> You can increase this value if your machine can handle a more aggressive
+> build.
+
 ### Using the script
 
 To use the build script, `cd` to the top-level `oomph-lib` directory (the same directory that contains `oomph_build.py`) and run it with Python. For example:
@@ -553,18 +592,21 @@ Below is a list of the options and their purpose:
 
 - **`--build-doc`**: By default, the script does not build the documentation (to save time and space). If you want to generate the full HTML (and PDF) documentation for oomph-lib, include the `--build-doc` flag. This will build the documentation (using Doxygen and LaTeX) as part of the build process. *Note:* Building documentation can be time-consuming and requires Doxygen (and a LaTeX distribution for PDFs) to be installed. If these tools are missing, the doc build will fail – in that case, either install the necessary tools or omit this option.
 
+- **`-j`/`--parallel`**: Set the number of parallel build jobs used by the build stages. By default, this is two fewer than the number of CPU cores, with a lower limit of one.
+- **`--use-max-jobs`**: Use all available CPU cores for the build stages. This cannot be combined with `-j`/`--parallel`.
+
 - **`--oomph-CMAKE_INSTALL_PREFIX`**: Use this option when you intend to provide a custom installation location.
 - **`--oomph-OOMPH_ALLOW_INSTALL_AS_SUPERUSER`**: Use this option when you intend to install `oomph-lib` system-wide (by installing it in `/usr/local/`) using root privileges. This flag tells the script to configure the installation prefix to the system's default location (`/usr/local`) and to set any required internal CMake switches such as`OOMPH_ALLOW_INSTALL_AS_SUPERUSER=ON`. If you also specify `--oomph-CMAKE_INSTALL_PREFIX`, this flag will have no effect.)
 
 > [!IMPORTANT]
 > When using this option, you will need to run the installation step with administrative privileges. The script will attempt to perform the installation step with sudo if possible, or it will remind you to re-run the script as root for the install phase. It is generally recommended to run oomph_build.py `--oomph-CMAKE_INSTALL_PREFIX` as a normal user for the build, and let it prompt for a password or instruct you for the install, rather than running the entire build as root. (Building as a non-root user helps avoid permission issues in the build directory.)
 
-- **`--wipe-tpl`**, **`--wipe-root`**, **`--wipe-doc`**: These options tell the script to remove the specified build/installation directories that would be written to when building the third-party libraries, root project, and documentation, respectively. Use the `--wipe-*` flags if you want a completely clean rebuild. For example
+- **`--wipe-tpl`**, **`--wipe-oomph`**, **`--wipe-doc`**: These options tell the script to remove the specified build/installation directories that would be written to when building the third-party libraries, root project, and documentation, respectively. Use the `--wipe-*` flags if you want a completely clean rebuild. For example
 
   ```bash
   # Wipe the default build/installation directories used when building
   # the third-party libraries, root project, and documentation
-  python3 oomph_build.py --wipe-tpl --wipe-root --wipe-doc
+  python3 oomph_build.py --wipe-tpl --wipe-oomph --wipe-doc
   ```
 
   will delete the current `build/` directory and the `install/` directory (if they exist) before configuring a fresh build. `--wipe-doc` will remove the `doc/build/` directory. These options are useful if you suspect a previous build is causing issues or if you want to reclaim space and rebuild from scratch.
@@ -624,6 +666,16 @@ cd build_for_demo_drivers
 # Now run the self-tests; here in parallel using
 # 4 cores (processes)
 ctest -j4
+```
+
+When running self-tests on a low-powered machine, there are two separate
+parallelism controls. `ctest -j` (or `CTEST_PARALLEL_LEVEL`) controls how many
+tests CTest runs at the same time. `CMAKE_BUILD_PARALLEL_LEVEL` controls how
+many compile or link jobs CMake may start when a test has to build one or more
+driver executables before running. For example:
+
+```bash
+CMAKE_BUILD_PARALLEL_LEVEL=2 CTEST_PARALLEL_LEVEL=1 ctest
 ```
 
 While `ctest` is running, we provide an overview of the progress and document the run-times of individual tests. Finally, a summary of the passed/failed tests is provided.

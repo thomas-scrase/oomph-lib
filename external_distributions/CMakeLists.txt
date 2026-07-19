@@ -78,7 +78,7 @@ oomph_option(OOMPH_BUILD_CGAL "Build CGAL?" ON)
 oomph_option(OOMPH_BUILD_MUMPS "Build MUMPS?" ON)
 oomph_option(OOMPH_BUILD_HYPRE "Build Hypre?" ON)
 oomph_option(OOMPH_BUILD_TRILINOS "Build Trilinos?" ON)
-oomph_option(OOMPH_ENABLE_THIRD_PARTY_LIBRARY_TESTS "Disable testing when building the third-party libraries?" OFF)
+oomph_option(OOMPH_ENABLE_THIRD_PARTY_LIBRARY_TESTS "Enable testing when building the third-party libraries?" OFF)
 
 # Set the default installation path
 if(PROJECT_IS_TOP_LEVEL AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -130,8 +130,12 @@ include(OomphGetExternalProjectHelper)
 
 # --------------------------------[ GENERAL ]----------------------------------
 
-# Decide on number of jobs to use for building projects
-ProcessorCount(OOMPH_NUM_JOBS)
+# Decide on number of jobs to use for building projects. If the caller passed
+# OOMPH_NUM_JOBS in via the CMake cache (e.g. via oomph_build.py's -j flag),
+# honour it; otherwise fall back to the detected CPU count.
+if(NOT DEFINED OOMPH_NUM_JOBS OR OOMPH_NUM_JOBS STREQUAL "")
+  ProcessorCount(OOMPH_NUM_JOBS)
+endif()
 if(OOMPH_NUM_JOBS EQUAL 0)
   set(OOMPH_NUM_JOBS 1)
   message(WARNING "Could not determine CPU cores. Using single job.")
