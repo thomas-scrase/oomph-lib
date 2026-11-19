@@ -1054,7 +1054,7 @@ namespace oomph
     }
 
     // Now calculate the stress tensor from the constitutive law
-    get_stress(g, G, sigma, ipt, s, Vector<double>(DIM, 0.0));
+    get_stress(g, G, sigma, ipt, s, interpolated_xi);
   }
 
 
@@ -2412,7 +2412,7 @@ namespace oomph
 
     if (Incompressible)
     {
-      get_stress(g, G, sigma_dev, Gup, detG, ipt, s, Vector<double>(DIM, 0.0));
+      get_stress(g, G, sigma_dev, Gup, detG, ipt, s, interpolated_xi);
     }
     // Nearly incompressible: Compute the deviatoric part of the
     // stress tensor, the contravariant deformed metric tensor,
@@ -2427,7 +2427,7 @@ namespace oomph
                  inv_kappa,
                  ipt,
                  s,
-                 Vector<double>(DIM, 0.0));
+                 interpolated_xi);
     }
 
     // Get complete stress
