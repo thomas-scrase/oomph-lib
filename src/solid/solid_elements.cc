@@ -2419,15 +2419,8 @@ namespace oomph
     // the generalised dilatation and the inverse bulk modulus.
     else
     {
-      get_stress(g,
-                 G,
-                 sigma_dev,
-                 Gup,
-                 gen_dil,
-                 inv_kappa,
-                 ipt,
-                 s,
-                 interpolated_xi);
+      get_stress(
+        g, G, sigma_dev, Gup, gen_dil, inv_kappa, ipt, s, interpolated_xi);
     }
 
     // Get complete stress
